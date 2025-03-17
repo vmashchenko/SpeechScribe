@@ -5,12 +5,19 @@ from werkzeug.utils import secure_filename
 import tempfile
 from audio_utils import convert_to_wav, cleanup_files
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging with more detailed format
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+logger.info("Starting application initialization...")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
+
+logger.info("Flask application instance created")
 
 # Configure upload settings
 ALLOWED_EXTENSIONS = {'m4a', 'wav', 'mp3'}
@@ -18,11 +25,15 @@ UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+logger.info(f"Upload folder set to: {UPLOAD_FOLDER}")
+logger.info("Application configuration completed")
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
+    logger.info("Serving index page")
     return render_template('index.html')
 
 @app.route('/transcribe', methods=['POST'])
@@ -42,15 +53,19 @@ def transcribe_file():
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
+        logger.info(f"File saved: {filepath}")
 
         # Check if we need to split audio
         split_audio = request.form.get('split_audio', 'false').lower() == 'true'
+        logger.info(f"Split audio requested: {split_audio}")
 
         # Convert and potentially split audio
         wav_files = convert_to_wav(filepath, split=split_audio)
+        logger.info(f"Audio conversion completed. Number of parts: {len(wav_files)}")
 
         # Get the selected service
         service = request.form.get('service', 'google')  # Default to Google
+        logger.info(f"Using transcription service: {service}")
 
         if service == 'openai':
             from transcription import transcribe_audio
@@ -63,12 +78,14 @@ def transcribe_file():
             try:
                 text = transcribe_audio(wav_file)
                 results.append(text)
+                logger.info(f"Successfully transcribed part: {wav_file}")
             except Exception as e:
                 logger.error(f"Ошибка распознавания части аудио: {str(e)}")
                 results.append(f"Ошибка распознавания: {str(e)}")
 
         # Clean up temporary files
         cleanup_files([filepath] + wav_files)
+        logger.info("Temporary files cleaned up")
 
         # Return results
         if len(results) == 1:
@@ -98,6 +115,7 @@ def download_transcription():
         temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt')
         temp_file.write(text)
         temp_file.close()
+        logger.info(f"Created download file: {temp_file.name}")
 
         return send_file(
             temp_file.name,
