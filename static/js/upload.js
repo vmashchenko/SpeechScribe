@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('file', file);
 
+        // Add selected service to form data
+        const selectedService = document.querySelector('input[name="service"]:checked').value;
+        formData.append('service', selectedService);
+
         resetUI();
         showProgress();
 
@@ -34,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Transcription failed');
+                throw new Error(data.error || 'Ошибка распознавания');
             }
 
             showResult(data.text);
@@ -59,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Download failed');
+                throw new Error(data.error || 'Ошибка скачивания');
             }
 
             // Create a blob from the response and download it

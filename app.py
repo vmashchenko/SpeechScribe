@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
 
 # Configure upload settings
-ALLOWED_EXTENSIONS = {'m4a'}
+ALLOWED_EXTENSIONS = {'m4a', 'wav', 'mp3'}  # Added more audio formats
 UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -27,36 +27,43 @@ def index():
 @app.route('/transcribe', methods=['POST'])
 def transcribe_file():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    
+        return jsonify({'error': 'Файл не предоставлен'}), 400
+
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
+        return jsonify({'error': 'Файл не выбран'}), 400
+
     if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file format. Please upload an M4A file'}), 400
+        return jsonify({'error': 'Неверный формат файла. Пожалуйста, загрузите аудио файл (m4a, wav, mp3)'}), 400
 
     try:
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # Import here to avoid circular import
-        from transcription import transcribe_audio
-        
+        # Get the selected service
+        service = request.form.get('service', 'google')  # Default to Google
+
+        if service == 'openai':
+            # Import here to avoid circular import
+            from transcription import transcribe_audio
+        else:
+            # Use Google Speech Recognition
+            from google_transcription import transcribe_audio
+
         # Perform transcription
         transcribed_text = transcribe_audio(filepath)
-        
+
         # Clean up the temporary file
         os.remove(filepath)
-        
+
         return jsonify({
             'success': True,
             'text': transcribed_text
         })
-    
+
     except Exception as e:
-        logger.error(f"Transcription error: {str(e)}")
+        logger.error(f"Ошибка транскрипции: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/download', methods=['POST'])
@@ -64,7 +71,7 @@ def download_transcription():
     try:
         text = request.json.get('text', '')
         if not text:
-            return jsonify({'error': 'No text provided'}), 400
+            return jsonify({'error': 'Текст не предоставлен'}), 400
 
         # Create temporary file for download
         temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt')
@@ -79,5 +86,5 @@ def download_transcription():
         )
 
     except Exception as e:
-        logger.error(f"Download error: {str(e)}")
+        logger.error(f"Ошибка скачивания: {str(e)}")
         return jsonify({'error': str(e)}), 500
