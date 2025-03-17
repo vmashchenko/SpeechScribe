@@ -5,23 +5,34 @@ import tempfile
 
 logger = logging.getLogger(__name__)
 
-def split_audio(audio_segment, max_duration_sec=59):
+def split_audio(audio_segment, max_duration_sec=59, overlap_sec=2):
     """
-    Split audio into chunks of specified duration
+    Split audio into chunks of specified duration with overlap
     """
     parts = []
     length_ms = len(audio_segment)
     max_duration_ms = max_duration_sec * 1000
-    
-    for i in range(0, length_ms, max_duration_ms):
-        end = min(i + max_duration_ms, length_ms)
-        part = audio_segment[i:end]
-        
+    overlap_ms = overlap_sec * 1000
+
+    # Split with overlap
+    start = 0
+    while start < length_ms:
+        # Calculate end point with overlap
+        end = min(start + max_duration_ms + overlap_ms, length_ms)
+
+        # Extract part with overlap
+        part = audio_segment[start:end]
+
         # Create temporary file for the part
         temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
         part.export(temp_file.name, format='wav')
         parts.append(temp_file.name)
-        
+
+        # Move start point, considering overlap
+        start = start + max_duration_ms
+
+        logger.info(f"Created audio part from {start/1000:.2f}s to {end/1000:.2f}s")
+
     return parts
 
 def convert_to_wav(input_path, split=False):
@@ -31,10 +42,10 @@ def convert_to_wav(input_path, split=False):
     try:
         # Get the file extension
         ext = os.path.splitext(input_path)[1].lower()
-        
+
         # Load audio file
         audio = AudioSegment.from_file(input_path)
-        
+
         if split:
             # Split audio into parts
             return split_audio(audio)
@@ -45,7 +56,7 @@ def convert_to_wav(input_path, split=False):
                 audio.export(wav_path, format='wav')
                 return [wav_path]
             return [input_path]
-            
+
     except Exception as e:
         raise Exception(f"Ошибка обработки аудио: {str(e)}")
 
