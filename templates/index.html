@@ -20,9 +20,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="audioFile" class="form-label">Выберите аудио файл (M4A, WAV, MP3)</label>
-                        <input type="file" class="form-control" id="audioFile" accept=".m4a,.wav,.mp3">
-                        <div class="form-text">Максимальный размер файла: 16MB (1 МИНУТА распознавания)</div>
+                        <label for="audioFile" class="form-label">Выберите аудио файлы (M4A, WAV, MP3)</label>
+                        <input type="file" class="form-control" id="audioFile" accept=".m4a,.wav,.mp3" multiple>
+                        <div class="form-text">Максимальный размер каждого файла: 16MB</div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="splitAudio">
+                        <label class="form-check-label" for="splitAudio">Разделить файлы на части по 59 секунд</label>
                     </div>
                     <button class="btn btn-primary" id="uploadBtn" disabled>
                         <i class="bi bi-upload"></i> Распознать речь
@@ -30,22 +34,24 @@
                 </div>
 
                 <div id="progressSection" class="d-none mt-3">
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                     <div class="d-flex align-items-center">
                         <div class="spinner-border spinner-border-sm me-2" role="status">
                             <span class="visually-hidden">Распознавание...</span>
                         </div>
-                        <span>Идет распознавание речи... Пожалуйста, подождите.</span>
+                        <span id="progressText">Идет распознавание речи... Пожалуйста, подождите.</span>
                     </div>
                 </div>
 
                 <div id="resultSection" class="d-none mt-3">
-                    <h6>Результат распознавания:</h6>
-                    <div class="form-group">
-                        <textarea class="form-control" id="transcriptionText" rows="10" readonly></textarea>
+                    <h6>Результаты распознавания:</h6>
+                    <div id="transcriptionResults">
                     </div>
                     <div class="mt-3">
                         <button class="btn btn-secondary" id="downloadBtn">
-                            <i class="bi bi-download"></i> Скачать текст
+                            <i class="bi bi-download"></i> Скачать все результаты
                         </button>
                     </div>
                 </div>
