@@ -1,23 +1,32 @@
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, send_file
-from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 import tempfile
+from werkzeug.utils import secure_filename
 from audio_utils import convert_to_wav, cleanup_files
 
-# Configure logging with more detailed format
+# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-logger.info("Starting application initialization...")
+class Base(DeclarativeBase):
+    pass
 
+db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET")
 
-logger.info("Flask application instance created")
+# Configure Flask app
+app.secret_key = os.environ.get("SESSION_SECRET")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
 
 # Configure upload settings
 ALLOWED_EXTENSIONS = {'m4a', 'wav', 'mp3'}
@@ -25,15 +34,14 @@ UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-logger.info(f"Upload folder set to: {UPLOAD_FOLDER}")
-logger.info("Application configuration completed")
+# Initialize extensions
+db.init_app(app)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
-    logger.info("Serving index page")
     return render_template('index.html')
 
 @app.route('/transcribe', methods=['POST'])
@@ -87,6 +95,16 @@ def transcribe_file():
         cleanup_files([filepath] + wav_files)
         logger.info("Temporary files cleaned up")
 
+        # Save to database
+        from models import Transcription
+        transcription = Transcription(
+            original_filename=filename,
+            text='\n\n'.join(results),
+            status='completed'
+        )
+        db.session.add(transcription)
+        db.session.commit()
+
         # Return results
         if len(results) == 1:
             return jsonify({
@@ -127,3 +145,7 @@ def download_transcription():
     except Exception as e:
         logger.error(f"Ошибка скачивания: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+with app.app_context():
+    import models
+    db.create_all()
