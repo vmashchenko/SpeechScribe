@@ -582,6 +582,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "pydub" },
     { name = "speechrecognition" },
+    { name = "sqlalchemy" },
     { name = "werkzeug" },
 ]
 
@@ -598,6 +599,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydub", specifier = ">=0.25.1" },
     { name = "speechrecognition", specifier = ">=3.14.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.39" },
     { name = "werkzeug", specifier = ">=3.1.3" },
 ]
 
