@@ -17,4 +17,5 @@ dependencies = [
     "flask-wtf>=1.2.2",
     "oauthlib>=3.2.2",
     "sqlalchemy>=2.0.39",
+    "platformio>=6.1.18",
 ]
