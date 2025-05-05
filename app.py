@@ -77,7 +77,6 @@ def transcribe_file():
 
         if service == 'openai':
             from transcription import transcribe_audio
-            whisper_model = request.form.get('whisper_model', 'whisper-1')
         else:
             from google_transcription import transcribe_audio
 
@@ -85,7 +84,7 @@ def transcribe_file():
         results = []
         for wav_file in wav_files:
             try:
-                text = transcribe_audio(wav_file, model_size=whisper_model) if service == 'openai' else transcribe_audio(wav_file)
+                text = transcribe_audio(wav_file)
                 results.append(text)
                 logger.info(f"Successfully transcribed part: {wav_file}")
             except Exception as e:
