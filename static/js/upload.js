@@ -10,6 +10,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBar = document.querySelector('.progress-bar');
     const progressText = document.getElementById('progressText');
     const splitAudioCheckbox = document.getElementById('splitAudio');
+    const whisperOptions = document.querySelector('.whisper-options');
+    const serviceRadios = document.querySelectorAll('input[name="service"]');
+
+    // Toggle Whisper options visibility
+    serviceRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            whisperOptions.classList.toggle('d-none', this.value !== 'openai');
+        });
+    });
 
     // Enable upload button only when files are selected
     audioFileInput.addEventListener('change', function() {
@@ -32,8 +41,12 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('service', document.querySelector('input[name="service"]:checked').value);
+                const service = document.querySelector('input[name="service"]:checked').value;
+                formData.append('service', service);
                 formData.append('split_audio', splitAudioCheckbox.checked);
+                if (service === 'openai') {
+                    formData.append('whisper_model', document.getElementById('whisperModel').value);
+                }
 
                 progressText.textContent = `Обработка файла ${file.name} (${completed + 1}/${files.length})...`;
                 progressBar.style.width = `${(completed / files.length) * 100}%`;
