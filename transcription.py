@@ -7,14 +7,17 @@ if not OPENAI_API_KEY:
 
 openai = OpenAI(api_key=OPENAI_API_KEY)
 
-def transcribe_audio(audio_file_path):
+def transcribe_audio(audio_file_path, model_size="whisper-1"):
     """
     Transcribe audio file using OpenAI Whisper API
+    Args:
+        audio_file_path: Path to audio file
+        model_size: Whisper model size (whisper-1, whisper-1-tiny, whisper-1-base)
     """
     try:
         with open(audio_file_path, "rb") as audio_file:
             response = openai.audio.transcriptions.create(
-                model="whisper-1",
+                model=model_size,
                 file=audio_file
             )
         return response.text
